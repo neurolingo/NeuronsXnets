@@ -15,6 +15,7 @@
 #define FAST_ROTATE_BITARRAY_HPP
 
 #include <cstdint>
+#include <cassert>
 #include <memory>
 #include <vector>
 #include <bit>
