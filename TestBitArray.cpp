@@ -14,6 +14,7 @@
 #include <iostream>
 #include <bitset>
 #include <random>
+#include <cstring>
 
 #include "BitArray.hpp"
 
@@ -32,13 +33,8 @@ void print(BitArray<T> const &bitarr)
   std::cout << std::endl;
 }
 
-int main([[maybe_unused]] int argc, [[maybe_unused]]  char **argv)
+void TestRotate(int num_tests)
 {
-  int  num_tests = 1000;
-
-  if (argc == 2)
-    num_tests = std::stoi(argv[1]);
-
   std::cout << "Testing BitArray.hpp" << std::endl;
 
   using block_type = uint64_t;
@@ -48,7 +44,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]]  char **argv)
 
   std::uniform_int_distribution distribution(100,1500);
 
-  for (uint32_t i=0; i < num_tests; i++)
+  for (int i=0; i < num_tests; i++)
   {
     int   num_bits{distribution(gen)};
 
@@ -93,6 +89,53 @@ int main([[maybe_unused]] int argc, [[maybe_unused]]  char **argv)
       }
     }
   }
+}
+
+void TestMaskCreation()
+{
+  using block_type = uint64_t;
+
+  std::size_t constexpr num_bits = 631;
+  std::size_t constexpr num_rotates = 1;
+
+  BitArray<block_type> spikes(num_bits);
+
+  char const *bits = "0000000000000000000000000000000000000000000000000000000000000001"
+                     "0000000000000000000000000000000000000000000000000000000000000001"
+                     "0000000000000000000000000000000000000000000000000000000000000001"
+                     "0000000000000000000000000000000000000000000000000000000000000001"
+                     "0000000000000000000000000000000000000000000000000000000000000001"
+                     "0000000000000000000000000000000000000000000000000000000000000001"
+                     "0000000000000000000000000000000000000000000000000000000000000001"
+                     "0000000000000000000000000000000000000000000000000000000000000001"
+                     "0000000000000000000000000000000000000000000000000000000000000001"
+                     "0000000000000000000000000000000000000000000000000000000000000001";
+  size_t len = std::strlen(bits);
+
+  for (size_t i=len; i > 0; i--)
+    if (bits[i - 1] == '1')
+      spikes.set(len- i);
+
+  BitArray<block_type> shift_spikes(num_bits);
+
+  print(spikes);
+  shift_spikes.createLeftNeighbourMask(spikes, 2);
+
+  print(shift_spikes);
+
+  shift_spikes.createRightNeighbourMask(spikes, 2);
+  print(shift_spikes);
+}
+
+int main([[maybe_unused]] int argc, [[maybe_unused]]  char **argv)
+{
+  int  num_tests = 1000;
+
+  if (argc == 2)
+    num_tests = std::stoi(argv[1]);
+
+  // TestRotate(num_tests);
+  TestMaskCreation();
 
   return 0;
 }
