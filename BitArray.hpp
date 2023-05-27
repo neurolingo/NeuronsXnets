@@ -361,7 +361,7 @@ public:
         block_type  prev       = static_cast<block_type>(0);
         block_type  newv;
 
-        for (size_type i = 0; i < last; ++i)
+        for (size_type i = 0; i <= last; ++i)
         {
           newv = (b[i] >> 1) | (prev << (bits_per_block-1));
           prev = b[i];

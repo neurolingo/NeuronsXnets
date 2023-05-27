@@ -19,9 +19,12 @@
 #include "BitArray.hpp"
 
 template <typename T>
-void print(BitArray<T> const &bitarr)
+void print(BitArray<T> const &bitarr, std::string_view msg)
 {
-  std::cout << "BitArray Block: " << BitArray<T>::bits_per_block << ", size: " << bitarr.size() << "\n";
+  std::cout << "BitArray (" << msg << ") "
+            << "Block Size: " << BitArray<T>::bits_per_block
+            << ", Array Size: " << bitarr.size()
+            << ", Count(Num of ones): " << bitarr.count() << "\n";
 
   for (T block : bitarr)
   {
@@ -76,14 +79,11 @@ void TestRotate(int num_tests)
 
       if (bitarr_r1 != bitarr_r2)
       {
-        std::cout << "***** spikes >> " << num_bits << " *****" << std::endl;
-        print(bitarr);
+        print(bitarr, "input");
 
-        std::cout << std::endl << "***** rotate *****" << std::endl;
-        print(bitarr_r1);
+        print(bitarr_r1,"block rotate");
 
-        std::cout << std::endl << "***** rotate right *****" << std::endl;
-        print(bitarr_r2);
+        print(bitarr_r2,"element rotate");
 
         break;
       }
@@ -96,35 +96,61 @@ void TestMaskCreation()
   using block_type = uint64_t;
 
   std::size_t constexpr num_bits = 631;
-  std::size_t constexpr num_rotates = 1;
 
-  BitArray<block_type> spikes(num_bits);
+  BitArray<block_type> spikes_1(num_bits);
+  BitArray<block_type> spikes_2(num_bits);
 
-  char const *bits = "0000000000000000000000000000000000000000000000000000000000000001"
-                     "0000000000000000000000000000000000000000000000000000000000000001"
-                     "0000000000000000000000000000000000000000000000000000000000000001"
-                     "0000000000000000000000000000000000000000000000000000000000000001"
-                     "0000000000000000000000000000000000000000000000000000000000000001"
-                     "0000000000000000000000000000000000000000000000000000000000000001"
-                     "0000000000000000000000000000000000000000000000000000000000000001"
-                     "0000000000000000000000000000000000000000000000000000000000000001"
-                     "0000000000000000000000000000000000000000000000000000000000000001"
-                     "0000000000000000000000000000000000000000000000000000000000000001";
-  size_t len = std::strlen(bits);
+  char const *bits_1 = "0000000000000000000000000000000000000000000000000000000000000001"
+                       "0000000000000000000000000000000000000000000000000000000000000001"
+                       "0000000000000000000000000000000000000000000000000000000000000001"
+                       "0000000000000000000000000000000000000000000000000000000000000001"
+                       "0000000000000000000000000000000000000000000000000000000000000001"
+                       "0000000000000000000000000000000000000000000000000000000000000001"
+                       "0000000000000000000000000000000000000000000000000000000000000001"
+                       "0000000000000000000000000000000000000000000000000000000000000001"
+                       "0000000000000000000000000000000000000000000000000000000000000001"
+                       "0000000000000000000000000000000000000000000000000000000000000000";
+  char const *bits_2 = "1000000000000000000000000000000000000000000000000000000000000000"
+                       "1000000000000000000000000000000000000000000000000000000000000000"
+                       "1000000000000000000000000000000000000000000000000000000000000000"
+                       "1000000000000000000000000000000000000000000000000000000000000000"
+                       "1000000000000000000000000000000000000000000000000000000000000000"
+                       "1000000000000000000000000000000000000000000000000000000000000000"
+                       "1000000000000000000000000000000000000000000000000000000000000000"
+                       "1000000000000000000000000000000000000000000000000000000000000000"
+                       "1000000000000000000000000000000000000000000000000000000000000000"
+                       "1000000000000000000000000000000000000000000000000000000000000000";
+  size_t len = std::strlen(bits_1);
 
-  for (size_t i=len; i > 0; i--)
-    if (bits[i - 1] == '1')
-      spikes.set(len- i);
+  for (size_t i=0; i < len; i++)
+  {
+    if (bits_1[i] == '1')
+      spikes_1.set(i);
+
+    if (bits_2[i] == '1')
+      spikes_2.set(i);
+  }
 
   BitArray<block_type> shift_spikes(num_bits);
 
-  print(spikes);
-  shift_spikes.createLeftNeighbourMask(spikes, 2);
+  print(spikes_1, "input");
+  shift_spikes.createLeftNeighbourMask(spikes_1, 2);
 
-  print(shift_spikes);
+  print(shift_spikes,"left neighbours -2-");
 
-  shift_spikes.createRightNeighbourMask(spikes, 2);
-  print(shift_spikes);
+  shift_spikes.createRightNeighbourMask(spikes_1, 2);
+  print(shift_spikes,"right neighbours -2-");
+
+  // second array
+  print(spikes_2, "input");
+  shift_spikes.createLeftNeighbourMask(spikes_2, 2);
+
+  print(shift_spikes,"left neighbours -2-");
+
+  shift_spikes.createRightNeighbourMask(spikes_2, 2);
+  print(shift_spikes,"right neighbours -2-");
+
+
 }
 
 int main([[maybe_unused]] int argc, [[maybe_unused]]  char **argv)
