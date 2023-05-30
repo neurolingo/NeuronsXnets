@@ -15,6 +15,7 @@
 #define FAST_ROTATE_BITARRAY_HPP
 
 #include <cstdint>
+#include <cassert>
 #include <memory>
 #include <vector>
 #include <bit>
@@ -53,6 +54,7 @@ public:
 private:
   size_t       m_bitset_capacity;
   size_t       m_num_bits;
+  size_t       m_count{0};
   buffer_type  m_bits;
 
 private:
@@ -88,6 +90,7 @@ public:
     auto bit_pos = pos % bits_per_block;
 
     m_bits[block_pos] |= (static_cast<block_type>(1) << bit_pos);
+    m_count++;
 
     return *this;
   }
@@ -100,6 +103,7 @@ public:
     auto bit_pos = pos % bits_per_block;
 
     m_bits[block_pos] &= ~(static_cast<block_type>(1) << bit_pos);
+    m_count--;
 
     return *this;
   }
@@ -121,6 +125,7 @@ public:
     std::fill(m_bits.begin(),m_bits.end(),Block(0));
 #endif /* __cpp_lib_ranges */
 
+    m_count = 0;
   }
 
   size_type num_blocks() noexcept
@@ -128,8 +133,13 @@ public:
     return static_cast<size_type>(m_bits.size());
   }
 
+  [[nodiscard]] size_t count() const
+  {
+    return m_count;
+  }
+
   // return the number of set bits
-  size_t count()
+  size_t recount()
   {
 #ifdef __cpp_lib_execution
       std::atomic<size_t> _count = 0;
@@ -294,9 +304,88 @@ public:
         set(i);
   }
 
+  void createLeftNeighbourMask(BitArray const other, int dt)
+  {
+    m_bits            = other.m_bits;
+    m_num_bits        = other.m_num_bits;
+    m_bitset_capacity = other.m_bitset_capacity;
+
+    m_bits = other.m_bits;
+
+    if ( (dt > 0) && (dt < int(bits_per_block)) ) {
+      {
+        buffer_type  lbits = other.m_bits;
+
+        for (int ir = 0; ir < dt; ir++)
+        {
+          size_type   const last = num_blocks() - 1;     // num_blocks() is >= 1
+          block_type *const b    = &lbits[0];
+          block_type  prev       = static_cast<block_type>(0);
+          block_type  newv;
+
+          for (int i = last; i >= 0; --i)
+          {
+            newv = (b[i] << 1) | (prev >> (bits_per_block-1));
+            prev = b[i];
+            b[i] = newv;
+          }
+
+          for (size_type i = 0; i <= last; ++i)
+          {
+            m_bits[i] |= b[i];
+          }
+        }
+
+        m_count = recount();
+      }
+    }
+  }
+
+  void createRightNeighbourMask(BitArray const other, int dt)
+  {
+    m_bits            = other.m_bits;
+    m_num_bits        = other.m_num_bits;
+    m_bitset_capacity = other.m_bitset_capacity;
+
+    m_bits = other.m_bits;
+
+    // distance must be less than the half of the size
+    if ( (dt > 0) && (dt < int(bits_per_block)) )
+    {
+      buffer_type rbits = other.m_bits;
+
+      for (int ir = 0; ir < dt; ir++)
+      {
+        size_type   const last = num_blocks() - 1;     // num_blocks() is >= 1
+        block_type *const b    = &rbits[0];
+        block_type  prev       = static_cast<block_type>(0);
+        block_type  newv;
+
+        for (size_type i = 0; i <= last; ++i)
+        {
+          newv = (b[i] >> 1) | (prev << (bits_per_block-1));
+          prev = b[i];
+          b[i] = newv;
+        }
+
+        for (size_type i = 0; i <= last; ++i)
+        {
+          m_bits[i] |= b[i];
+        }
+      }
+
+      m_count = recount();
+    }
+  }
+
   [[nodiscard]] size_t size() const
   {
     return m_num_bits;
+  }
+
+  [[nodiscard]] bool empty() const
+  {
+    return m_num_bits == 0;
   }
 
   bool operator==(BitArray const &other) const noexcept
