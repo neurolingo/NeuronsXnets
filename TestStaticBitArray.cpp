@@ -1,7 +1,7 @@
 /**
- * @file TestBitArray.cpp
+ * @file TestStaticBitArray.cpp
  *
- * @brief test case for BitArray.hpp
+ * @brief test case for StaticBitArray.hpp
  *
  * @ingroup StrictClusteringCoefficient
  *
@@ -16,19 +16,19 @@
 #include <random>
 #include <cstring>
 
-#include "BitArray.hpp"
+#include "StaticBitArray.hpp"
 
-template <typename T>
-void print(BitArray<T> const &bitarr, std::string_view msg)
+template <size_t N, typename T>
+void print(StaticBitArray<N,T> const &bitarr, std::string_view msg)
 {
-  std::cout << "BitArray (" << msg << ") "
-            << "Block Size: " << BitArray<T>::bits_per_block
+  std::cout << "StaticBitArray (" << msg << ") "
+            << "Block Size: " << StaticBitArray<N,T>::bits_per_block
             << ", Array Size: " << bitarr.size()
             << ", Count(Num of ones): " << bitarr.count() << "\n";
 
   for (T block : bitarr)
   {
-    std::bitset<BitArray<T>::bits_per_block>  bset(block);
+    std::bitset<StaticBitArray<N,T>::bits_per_block>  bset(block);
 
     std::cout << bset << std::endl;
   }
@@ -36,28 +36,27 @@ void print(BitArray<T> const &bitarr, std::string_view msg)
   std::cout << std::endl;
 }
 
+template <size_t N>
 void TestBitArrayFastRotate(int num_tests)
 {
-  std::cout << "Testing BitArray.hpp" << std::endl;
+  std::cout << "Testing StaticBitArray<" << N << ">" << std::endl;
 
   using block_type = uint64_t;
+  constexpr size_t  num_bits = N;
 
   std::random_device rd;        // Will be used to obtain a seed for the random number engine
   std::mt19937       gen(rd()); // Standard mersenne_twister_engine seeded with rd()
 
-  std::uniform_int_distribution distribution(100,1500);
+  std::uniform_int_distribution distribution(0,int(num_bits-1));
 
   for (int i=0; i < num_tests; i++)
   {
-    int   num_bits{distribution(gen)};
-
-    BitArray<block_type>          bitarr(num_bits);
-    std::uniform_int_distribution bitdistribution(0,num_bits-1);
+    StaticBitArray<num_bits,block_type>  bitarr;
     uint32_t                      num_ones = static_cast<uint32_t>(distribution(gen));
 
     for (uint32_t j=0; j < num_ones; j++)
     {
-      int bit{bitdistribution(gen)};
+      int bit{distribution(gen)};
 
       if (bit >= num_bits)
         throw std::invalid_argument("Wrong value from random number generator");
@@ -69,10 +68,10 @@ void TestBitArrayFastRotate(int num_tests)
 
     for (uint32_t j=1; j < num_rotates; j++)
     {
-      BitArray<block_type> bitarr_r1(num_bits);
-      BitArray<block_type> bitarr_r2(num_bits);
+      StaticBitArray<num_bits,block_type> bitarr_r1;
+      StaticBitArray<num_bits,block_type> bitarr_r2;
 
-      int num_shifts{bitdistribution(gen)};
+      int num_shifts{distribution(gen)};
 
       bitarr_r1.rotate(bitarr,num_shifts);
       bitarr_r2.rotateRight(bitarr,num_shifts);
@@ -97,8 +96,8 @@ void TestMaskCreation()
 
   std::size_t constexpr num_bits = 631;
 
-  BitArray<block_type> spikes_1(num_bits);
-  BitArray<block_type> spikes_2(num_bits);
+  StaticBitArray<num_bits,block_type> spikes_1;
+  StaticBitArray<num_bits,block_type> spikes_2;
 
   char const *bits_1 = "0000000000000000000000000000000000000000000000000000000000000001"
                        "0000000000000000000000000000000000000000000000000000000000000001"
@@ -131,7 +130,7 @@ void TestMaskCreation()
       spikes_2.set(i);
   }
 
-  BitArray<block_type> shift_spikes(num_bits);
+  StaticBitArray<num_bits,block_type> shift_spikes;
 
   print(spikes_1, "input");
   shift_spikes.createLeftNeighbourMask(spikes_1, 2);
@@ -158,7 +157,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]]  char **argv)
   if (argc == 2)
     num_tests = std::stoi(argv[1]);
 
-  TestBitArrayFastRotate(num_tests);
+  TestBitArrayFastRotate<357>(num_tests);
   TestMaskCreation();
 
   return 0;

@@ -3,6 +3,7 @@
 #include <benchmark/benchmark.h>
 
 #include "BitArray.hpp"
+#include "StaticBitArray.hpp"
 
 using block_type = uint64_t;
 

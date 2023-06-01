@@ -34,11 +34,14 @@
 #include <ranges>
 #endif /* __cpp_lib_ranges */
 
+// in order to benchmark the two rotate functions
+// we define them as 'no inline'
+
 #if defined(WIN32)
 #define NOINLINE __declspec(noinline)
 #else
 #define NOINLINE __attribute__((noinline))
-#endif /*  */
+#endif /* WIN32 */
 
 template <typename Block=std::uint64_t, typename Allocator=std::allocator<Block>>
 class BitArray
@@ -49,7 +52,11 @@ public:
   using buffer_type      = std::vector<Block,Allocator>;
   using block_width_type = typename buffer_type::size_type;
 
+#ifdef __cpp_constinit
+  static constinit const size_t bits_per_block = std::numeric_limits<Block>::digits;
+#else
   static constexpr const size_t bits_per_block = std::numeric_limits<Block>::digits;
+#endif /*  __cpp_constinit */
 
 private:
   size_t       m_bitset_capacity;
@@ -58,18 +65,15 @@ private:
   buffer_type  m_bits;
 
 private:
-  static bool m_not_empty(Block x) noexcept { return x != Block(0); };
-
-  block_width_type        count_extra_bits()   const noexcept { return bit_index(size()); }
   static size_type        block_index(size_type pos) noexcept { return pos / bits_per_block; }
   static block_width_type bit_index  (size_type pos) noexcept { return static_cast<block_width_type>(pos % bits_per_block); }
   static Block            bit_mask   (size_type pos) noexcept { return Block(1) << bit_index(pos); }
 
 public:
 
-  explicit BitArray(std::size_t num_spikes) :
-      m_bitset_capacity((num_spikes-1) / bits_per_block + 1),
-      m_num_bits(num_spikes),
+  explicit BitArray(std::size_t num_bits) :
+      m_bitset_capacity((num_bits-1) / bits_per_block + 1),
+      m_num_bits(num_bits),
       m_bits(m_bitset_capacity)
   {  }
 
@@ -86,10 +90,7 @@ public:
   {
     assert(pos < m_num_bits);
 
-    auto block_pos = pos / bits_per_block;
-    auto bit_pos = pos % bits_per_block;
-
-    m_bits[block_pos] |= (static_cast<block_type>(1) << bit_pos);
+    m_bits[block_index(pos)] |= bit_mask(pos);
     m_count++;
 
     return *this;
@@ -99,10 +100,7 @@ public:
   {
     assert(pos < m_num_bits);
 
-    auto block_pos = pos / bits_per_block;
-    auto bit_pos = pos % bits_per_block;
-
-    m_bits[block_pos] &= ~(static_cast<block_type>(1) << bit_pos);
+    m_bits[block_index(pos)] &= ~bit_mask(pos);
     m_count--;
 
     return *this;
@@ -122,13 +120,13 @@ public:
 #ifdef __cpp_lib_ranges
     std::ranges::fill(m_bits, Block(0));
 #else
-    std::fill(m_bits.begin(),m_bits.end(),Block(0));
+    std::fill(begin(),end(),Block(0));
 #endif /* __cpp_lib_ranges */
 
     m_count = 0;
   }
 
-  size_type num_blocks() noexcept
+  [[nodiscard]] size_type num_blocks() const noexcept
   {
     return static_cast<size_type>(m_bits.size());
   }
@@ -144,14 +142,14 @@ public:
 #ifdef __cpp_lib_execution
       std::atomic<size_t> _count = 0;
 
-      std::for_each(std::execution::par_unseq, m_bits.begin(), m_bits.end(),
+      std::for_each(std::execution::par_unseq, begin(), end(),
                     [&](block_type block) { _count += std::popcount(block); });
 
       return _count;
 #else
     size_t _count = 0;
 
-      std::for_each(m_bits.begin(), m_bits.end(),
+      std::for_each(begin(), end(),
                     [&](block_type block) { _count += std::popcount(block); });
 
       return _count;
@@ -159,7 +157,7 @@ public:
   }
 
   // return the number of common set bits (intersection of the two bitsets)
-  size_t common(BitArray const &other)
+  [[nodiscard]]  size_t common(BitArray const &other)
   {
     assert(m_num_bits == other.m_num_bits);
 
@@ -171,6 +169,7 @@ public:
     return _count;
   }
 
+  // The fast blockwise implementation of (right) rotate
   NOINLINE void rotate(BitArray const &other, size_t n)
   {
     assert(size() == other.size());
@@ -283,6 +282,7 @@ public:
     }
   }
 
+  // the slow classical elementwise implementation of rotate
   NOINLINE void rotateRight(BitArray const &other, size_t n)
   {
     assert(size() == other.size());
@@ -304,50 +304,49 @@ public:
         set(i);
   }
 
+  // create the left neighbour bits, i.e., for each '1' bit
+  //  of the operand we set also the dt left bits in result
   void createLeftNeighbourMask(BitArray const other, int dt)
   {
     m_bits            = other.m_bits;
     m_num_bits        = other.m_num_bits;
     m_bitset_capacity = other.m_bitset_capacity;
 
-    m_bits = other.m_bits;
+    if ( (dt > 0) && (dt < int(bits_per_block)) )
+    {
+      buffer_type  lbits = other.m_bits;
 
-    if ( (dt > 0) && (dt < int(bits_per_block)) ) {
+      for (int ir = 0; ir < dt; ir++)
       {
-        buffer_type  lbits = other.m_bits;
+        size_type   const last = num_blocks() - 1;     // num_blocks() is >= 1
+        block_type *const b    = &lbits[0];
+        block_type  prev       = static_cast<block_type>(0);
+        block_type  newv;
 
-        for (int ir = 0; ir < dt; ir++)
+        for (int i = last; i >= 0; --i)
         {
-          size_type   const last = num_blocks() - 1;     // num_blocks() is >= 1
-          block_type *const b    = &lbits[0];
-          block_type  prev       = static_cast<block_type>(0);
-          block_type  newv;
-
-          for (int i = last; i >= 0; --i)
-          {
-            newv = (b[i] << 1) | (prev >> (bits_per_block-1));
-            prev = b[i];
-            b[i] = newv;
-          }
-
-          for (size_type i = 0; i <= last; ++i)
-          {
-            m_bits[i] |= b[i];
-          }
+          newv = (b[i] << 1) | (prev >> (bits_per_block-1));
+          prev = b[i];
+          b[i] = newv;
         }
 
-        m_count = recount();
+        for (size_type i = 0; i <= last; ++i)
+        {
+          m_bits[i] |= b[i];
+        }
       }
+
+      m_count = recount();
     }
   }
 
+  // create the right neighbour bits, i.e., for each '1' bit
+  //  of the operand we set also the dt right bits in result
   void createRightNeighbourMask(BitArray const other, int dt)
   {
     m_bits            = other.m_bits;
     m_num_bits        = other.m_num_bits;
     m_bitset_capacity = other.m_bitset_capacity;
-
-    m_bits = other.m_bits;
 
     // distance must be less than the half of the size
     if ( (dt > 0) && (dt < int(bits_per_block)) )
@@ -381,11 +380,6 @@ public:
   [[nodiscard]] size_t size() const
   {
     return m_num_bits;
-  }
-
-  [[nodiscard]] bool empty() const
-  {
-    return m_num_bits == 0;
   }
 
   bool operator==(BitArray const &other) const noexcept
