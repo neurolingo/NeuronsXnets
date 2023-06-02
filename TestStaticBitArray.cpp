@@ -90,11 +90,13 @@ void TestBitArrayFastRotate(int num_tests)
   }
 }
 
+template <size_t N>
 void TestMaskCreation()
 {
+  std::cout << "Testing StaticBitArray<" << N << "> Left & Right Masks" << std::endl;
   using block_type = uint64_t;
 
-  std::size_t constexpr num_bits = 631;
+  std::size_t constexpr num_bits = N;
 
   StaticBitArray<num_bits,block_type> spikes_1;
   StaticBitArray<num_bits,block_type> spikes_2;
@@ -158,7 +160,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]]  char **argv)
     num_tests = std::stoi(argv[1]);
 
   TestBitArrayFastRotate<357>(num_tests);
-  TestMaskCreation();
+  TestMaskCreation<631>();
 
   return 0;
 }

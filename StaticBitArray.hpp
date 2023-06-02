@@ -75,7 +75,11 @@ private:
 
 public:
 
-    StaticBitArray() = default;
+    StaticBitArray()
+    {
+      reset();
+    }
+
     StaticBitArray(StaticBitArray const &) = default;
     StaticBitArray(StaticBitArray &&) noexcept = default;
 
@@ -83,6 +87,30 @@ public:
     StaticBitArray &operator=(StaticBitArray &&) noexcept = default;
 
     ~StaticBitArray() = default;
+
+
+#ifdef __cpp_consteval
+  [[nodiscard]] static consteval size_t size() noexcept
+  {
+    return num_of_bits;
+  }
+
+  [[nodiscard]] static consteval size_type num_blocks() noexcept
+  {
+    return num_of_blocks;
+  }
+#else
+  [[nodiscard]] static  constexpr size_t size() noexcept
+  {
+    return num_of_bits;
+  }
+
+  [[nodiscard]] static constexpr size_type num_blocks() noexcept
+  {
+    return num_of_blocks;
+  }
+#endif  /* __cpp_consteval */
+
 
     StaticBitArray  &set(uint32_t pos)
     {
@@ -124,12 +152,7 @@ public:
       m_count = 0;
     }
 
-    [[nodiscard]] size_type num_blocks() const noexcept
-    {
-      return num_of_blocks;
-    }
-
-    [[nodiscard]] size_t count() const
+    [[nodiscard]] size_t count() const noexcept
     {
       return m_count;
     }
@@ -297,13 +320,20 @@ public:
     //  of the operand we set also the dt left bits in result
     void createLeftNeighbourMask(StaticBitArray const other, int dt)
     {
+#ifdef __cpp_lib_ranges
+      std::ranges::copy(other.begin(),other.end(),begin());
+#else
       std::copy(other.begin(),other.end(),begin());
-
+#endif /* __cpp_lib_ranges */
       if ( (dt > 0) && (dt < int(bits_per_block)) )
       {
         buffer_type  lbits;
 
+#ifdef __cpp_lib_ranges
+        std::ranges::copy(other.begin(),other.end(),std::begin(lbits));
+#else
         std::copy(other.begin(),other.end(),std::begin(lbits));
+#endif /* __cpp_lib_ranges */
 
         for (int ir = 0; ir < dt; ir++)
         {
@@ -333,14 +363,22 @@ public:
     //  of the operand we set also the dt right bits in result
     void createRightNeighbourMask(StaticBitArray const other, int dt)
     {
+#ifdef __cpp_lib_ranges
+      std::ranges::copy(other.begin(),other.end(),begin());
+#else
       std::copy(other.begin(),other.end(),begin());
+#endif /* __cpp_lib_ranges */
 
       // distance must be less than the half of the size
       if ( (dt > 0) && (dt < int(bits_per_block)) )
       {
         buffer_type rbits;
 
+#ifdef __cpp_lib_ranges
+        std::ranges::copy(other.begin(),other.end(),std::begin(rbits));
+#else
         std::copy(other.begin(),other.end(),std::begin(rbits));
+#endif /* __cpp_lib_ranges */
 
         for (int ir = 0; ir < dt; ir++)
         {
@@ -364,11 +402,6 @@ public:
 
         m_count = recount();
       }
-    }
-
-    [[nodiscard]] size_t size() const
-    {
-      return num_of_bits;
     }
 
     bool operator==(StaticBitArray const &other) const noexcept

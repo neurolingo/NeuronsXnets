@@ -64,4 +64,75 @@ static void BM_RotateRight(benchmark::State& state)
 }
 BENCHMARK(BM_RotateRight);
 
+
+// Benchmarks with static
+
+constinit const int NUM_BITS = 1230;
+
+template <typename T>
+StaticBitArray<NUM_BITS,T> make_bitarray()
+{
+  StaticBitArray<NUM_BITS,block_type>   statbitarr;
+  std::uniform_int_distribution         bitdistribution(0,NUM_BITS-1);
+  int                                   num_ones = distribution(gen);
+
+  for (int j=0; j < num_ones; j++)
+  {
+    int bit{bitdistribution(gen)};
+
+    statbitarr.set(bit);
+  }
+
+  return statbitarr;
+}
+
+StaticBitArray<NUM_BITS,block_type>   static_bitarr{make_bitarray<block_type>()};
+BitArray<block_type>   bitarr4static{NUM_BITS, static_bitarr.begin(),static_bitarr.end()};
+
+static void BM_Rotate4Static(benchmark::State& state)
+{
+  for (auto _: state)
+  {
+    for (int j = 1; j < NUM_BITS; j++)
+    {
+      BitArray<block_type> bitarr_r(NUM_BITS);
+      bitarr_r.rotate(bitarr4static, j);
+    }
+  }
+}
+// Register the function as a benchmark
+BENCHMARK(BM_Rotate4Static);
+
+static void BM_StaticRotate(benchmark::State& state)
+{
+  for (auto _: state)
+  {
+    for (int j = 1; j < num_bits; j++)
+    {
+      StaticBitArray<NUM_BITS,block_type> bitarr_r;
+      bitarr_r.rotate(static_bitarr, j);
+    }
+  }
+}
+// Register the function as a benchmark
+BENCHMARK(BM_StaticRotate);
+
+// Benchmark the rotateRight
+static void BM_StaticRotateRight(benchmark::State& state)
+{
+  for (auto _ : state)
+  {
+    for (int j=1; j < num_bits; j++)
+    {
+      BitArray<block_type> bitarr_r(num_bits);
+
+      bitarr_r.rotateRight(bitarr,j);
+    }
+  }
+}
+BENCHMARK(BM_StaticRotateRight);
+
+
+
+
 BENCHMARK_MAIN();

@@ -77,6 +77,13 @@ public:
       m_bits(m_bitset_capacity)
   {  }
 
+  template <typename Iterator>
+  BitArray(std::size_t num_bits, Iterator beg, Iterator end) : BitArray(num_bits)
+  {
+    std::copy(beg,end,m_bits.begin());
+  }
+
+
   BitArray() = delete;
   BitArray(BitArray const &) = default;
   BitArray(BitArray &&) noexcept = default;
