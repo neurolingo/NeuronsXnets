@@ -27,7 +27,7 @@ and 'CreateRightNeighbourMask(int Dt)'. These operations set the left or right b
 With the help of these masks, the functions can be reduced to performing a bitwise 'and' (&) 
 operation between two arrays and counting the number of 'one bits'."
 
-"There are three programs available for testing the operations and evaluating the efficiency of the rotate function. 
+There are three programs available for testing the operations and evaluating the efficiency of the rotate function. 
 The TestBitArray.cpp and TestStaticArray.cpp programs specifically test the functionality of the 'rotate' 
 and 'CreateMask' functions in dynamic and static versions of bit arrays. 
 Additionally, the profiler produces an image displaying time periods for both the 
