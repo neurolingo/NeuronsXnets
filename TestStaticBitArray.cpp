@@ -23,7 +23,7 @@ void print(nlg::StaticBitArray<N,T> const &bitarr, std::string_view msg)
 {
   std::cout << "StaticBitArray (" << msg << ") "
             << "Block Size: " << nlg::StaticBitArray<N,T>::bits_per_block
-            << ", Array Size: " << bitarr.size()
+            << ", Array Size: " << nlg::StaticBitArray<N,T>::size()
             << ", Count(Num of ones): " << bitarr.count() << "\n";
 
   for (T block : bitarr)
@@ -51,8 +51,8 @@ void TestBitArrayFastRotate(int num_tests)
 
   for (int i=0; i < num_tests; i++)
   {
-    nlg::StaticBitArray<num_bits,block_type>  bitarr;
-    uint32_t                                  num_ones = static_cast<uint32_t>(distribution(gen));
+    nlg::StaticBitArray<num_bits,block_type> bitarr;
+    auto                                     num_ones = static_cast<uint32_t>(distribution(gen));
 
     for (uint32_t j=0; j < num_ones; j++)
     {
@@ -64,7 +64,7 @@ void TestBitArrayFastRotate(int num_tests)
       bitarr.set(bit);
     }
 
-    uint32_t  num_rotates = static_cast<uint32_t>(num_bits);
+    auto  num_rotates = static_cast<uint32_t>(num_bits);
 
     for (uint32_t j=1; j < num_rotates; j++)
     {
@@ -123,7 +123,7 @@ void TestMaskCreation()
                        "1000000000000000000000000000000000000000000000000000000000000000";
   size_t len = std::strlen(bits_1);
 
-  for (size_t i=0; i < len; i++)
+  for (uint32_t i=0; i < uint32_t(len); i++)
   {
     if (bits_1[i] == '1')
       spikes_1.set(i);
