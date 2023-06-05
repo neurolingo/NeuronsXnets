@@ -12,5 +12,5 @@ add_executable(TestBitArray TestBitArray.cpp BitArray.hpp StaticBitArray.hpp)
 add_executable(BenchmarkRotate BenchRotate.cpp BitArray.hpp StaticBitArray.hpp)
 add_executable(TestStaticBitArray TestStaticBitArray.cpp StaticBitArray.hpp)
 
-target_link_libraries(BenchmarkRotate benchmark)
+target_link_libraries(BenchmarkRotate benchmark pthread)
 
