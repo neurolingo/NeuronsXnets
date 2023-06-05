@@ -19,16 +19,16 @@
 #include "BitArray.hpp"
 
 template <typename T>
-void print(BitArray<T> const &bitarr, std::string_view msg)
+void print(nlg::BitArray<T> const &bitarr, std::string_view msg)
 {
   std::cout << "BitArray (" << msg << ") "
-            << "Block Size: " << BitArray<T>::bits_per_block
+            << "Block Size: " << nlg::BitArray<T>::bits_per_block
             << ", Array Size: " << bitarr.size()
             << ", Count(Num of ones): " << bitarr.count() << "\n";
 
   for (T block : bitarr)
   {
-    std::bitset<BitArray<T>::bits_per_block>  bset(block);
+    std::bitset<nlg::BitArray<T>::bits_per_block>  bset(block);
 
     std::cout << bset << std::endl;
   }
@@ -51,7 +51,7 @@ void TestBitArrayFastRotate(int num_tests)
   {
     int   num_bits{distribution(gen)};
 
-    BitArray<block_type>          bitarr(num_bits);
+    nlg::BitArray<block_type>     bitarr(num_bits);
     std::uniform_int_distribution bitdistribution(0,num_bits-1);
     uint32_t                      num_ones = static_cast<uint32_t>(distribution(gen));
 
@@ -69,8 +69,8 @@ void TestBitArrayFastRotate(int num_tests)
 
     for (uint32_t j=1; j < num_rotates; j++)
     {
-      BitArray<block_type> bitarr_r1(num_bits);
-      BitArray<block_type> bitarr_r2(num_bits);
+      nlg::BitArray<block_type> bitarr_r1(num_bits);
+      nlg::BitArray<block_type> bitarr_r2(num_bits);
 
       int num_shifts{bitdistribution(gen)};
 
@@ -97,8 +97,8 @@ void TestMaskCreation()
 
   std::size_t constexpr num_bits = 631;
 
-  BitArray<block_type> spikes_1(num_bits);
-  BitArray<block_type> spikes_2(num_bits);
+  nlg::BitArray<block_type> spikes_1(num_bits);
+  nlg::BitArray<block_type> spikes_2(num_bits);
 
   char const *bits_1 = "0000000000000000000000000000000000000000000000000000000000000001"
                        "0000000000000000000000000000000000000000000000000000000000000001"
@@ -131,7 +131,7 @@ void TestMaskCreation()
       spikes_2.set(i);
   }
 
-  BitArray<block_type> shift_spikes(num_bits);
+  nlg::BitArray<block_type> shift_spikes(num_bits);
 
   print(spikes_1, "input");
   shift_spikes.createLeftNeighbourMask(spikes_1, 2);

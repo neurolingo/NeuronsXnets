@@ -18,13 +18,13 @@
 #include "BitArray.hpp"
 
 template <typename T>
-void print(BitArray<T> const &bitarr)
+void print(nlg::BitArray<T> const &bitarr)
 {
-  std::cout << "BitArray Block: " << BitArray<T>::bits_per_block << ", size: " << bitarr.size() << "\n";
+  std::cout << "BitArray Block: " << nlg::BitArray<T>::bits_per_block << ", size: " << bitarr.size() << "\n";
 
   for (T block : bitarr)
   {
-    std::bitset<BitArray<T>::bits_per_block>  bset(block);
+    std::bitset<nlg::BitArray<T>::bits_per_block>  bset(block);
 
     std::cout << bset << std::endl;
   }
@@ -52,7 +52,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]]  char **argv)
   {
     int   num_bits{distribution(gen)};
 
-    BitArray<block_type>          bitarr(num_bits);
+    nlg::BitArray<block_type>     bitarr(num_bits);
     std::uniform_int_distribution bitdistribution(0,num_bits-1);
     uint32_t                      num_ones = static_cast<uint32_t>(distribution(gen));
 
@@ -70,8 +70,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]]  char **argv)
 
     for (uint32_t j=1; j < num_rotates; j++)
     {
-      BitArray<block_type> bitarr_r1(num_bits);
-      BitArray<block_type> bitarr_r2(num_bits);
+      nlg::BitArray<block_type> bitarr_r1(num_bits);
+      nlg::BitArray<block_type> bitarr_r2(num_bits);
 
       int num_shifts{bitdistribution(gen)};
 

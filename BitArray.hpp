@@ -3,7 +3,7 @@
  *
  * @brief Implementation of Bit Array type with fast rotate rotate operations
  *
- * @ingroup StrictClusteringCoefficient
+ * @ingroup neurolingo
  *
  * @author Christos Tsalidis
  * Contact: tsalidis@neurolingo.gr
@@ -42,6 +42,8 @@
 #else
 #define NOINLINE __attribute__((noinline))
 #endif /* WIN32 */
+
+namespace nlg {
 
 template <typename Block=std::uint64_t, typename Allocator=std::allocator<Block>>
 class BitArray
@@ -421,5 +423,7 @@ public:
     return m_bits.end();
   }
 };
+
+}  // namespace nlg
 
 #endif //FAST_ROTATE_BITARRAY_HPP

@@ -43,15 +43,21 @@
 #define NOINLINE __attribute__((noinline))
 #endif /* WIN32 */
 
-template <size_t N, typename Block=std::uint64_t>
-class StaticBitArray
-{
-public:
+namespace nlg {
+
+  template<size_t N, typename Block=std::uint64_t>
+  class StaticBitArray
+  {
+  public:
 
 #ifdef __cpp_constinit
-    static constinit const size_t num_of_bits    = N;
+
+    static constinit const size_t num_of_bits = N;
+
     static constinit const size_t bits_per_block = std::numeric_limits<Block>::digits;
-    static constinit const size_t num_of_blocks  = (num_of_bits-1) / bits_per_block + 1;
+
+    static constinit const size_t num_of_blocks = (num_of_bits - 1) / bits_per_block + 1;
+
 #else
     static constexpr const size_t bits_per_block = std::numeric_limits<Block>::digits;
     static constexpr const size_t bits_per_block = std::numeric_limits<Block>::digits;
@@ -59,21 +65,27 @@ public:
 #endif /*  __cpp_constinit */
 
 
-    using block_type       = Block;
-    using size_type        = size_t;
-    using buffer_type      = Block[num_of_blocks];
+    using block_type = Block;
+    using size_type = size_t;
+    using buffer_type = Block[num_of_blocks];
     using block_width_type = unsigned short;
 
-private:
-    size_t       m_count{0};
-    buffer_type  m_bits;
+  private:
+    size_t m_count{0};
 
-private:
-    static size_type        block_index(size_type pos) noexcept { return pos / bits_per_block; }
-    static block_width_type bit_index  (size_type pos) noexcept { return static_cast<block_width_type>(pos % bits_per_block); }
-    static Block            bit_mask   (size_type pos) noexcept { return Block(1) << bit_index(pos); }
+    buffer_type m_bits;
 
-public:
+  private:
+    static size_type block_index(size_type pos) noexcept
+    { return pos / bits_per_block; }
+
+    static block_width_type bit_index(size_type pos) noexcept
+    { return static_cast<block_width_type>(pos % bits_per_block); }
+
+    static Block bit_mask(size_type pos) noexcept
+    { return Block(1) << bit_index(pos); }
+
+  public:
 
     StaticBitArray()
     {
@@ -81,38 +93,42 @@ public:
     }
 
     StaticBitArray(StaticBitArray const &) = default;
+
     StaticBitArray(StaticBitArray &&) noexcept = default;
 
     StaticBitArray &operator=(StaticBitArray const &) = default;
+
     StaticBitArray &operator=(StaticBitArray &&) noexcept = default;
 
     ~StaticBitArray() = default;
 
 
 #ifdef __cpp_consteval
-  [[nodiscard]] static consteval size_t size() noexcept
-  {
-    return num_of_bits;
-  }
 
-  [[nodiscard]] static consteval size_type num_blocks() noexcept
-  {
-    return num_of_blocks;
-  }
+    [[nodiscard]] static consteval size_t size() noexcept
+    {
+      return num_of_bits;
+    }
+
+    [[nodiscard]] static consteval size_type num_blocks() noexcept
+    {
+      return num_of_blocks;
+    }
+
 #else
-  [[nodiscard]] static  constexpr size_t size() noexcept
-  {
-    return num_of_bits;
-  }
+    [[nodiscard]] static  constexpr size_t size() noexcept
+    {
+      return num_of_bits;
+    }
 
-  [[nodiscard]] static constexpr size_type num_blocks() noexcept
-  {
-    return num_of_blocks;
-  }
+    [[nodiscard]] static constexpr size_type num_blocks() noexcept
+    {
+      return num_of_blocks;
+    }
 #endif  /* __cpp_consteval */
 
 
-    StaticBitArray  &set(uint32_t pos)
+    StaticBitArray &set(uint32_t pos)
     {
       assert(pos < num_of_bits);
 
@@ -136,7 +152,7 @@ public:
     {
       assert(pos < size());
 
-      block_type  blk{m_bits[block_index(pos)]};
+      block_type blk{m_bits[block_index(pos)]};
 
       return blk >> bit_index(pos) & static_cast<block_type>(1);
     }
@@ -182,7 +198,7 @@ public:
     {
       size_t _count = 0;
 
-      for (block_type const *lp=begin(), *rp=other.begin(), *lend=m_bits.end(); lp < lend; lp++,rp++)
+      for (block_type const *lp = begin(), *rp = other.begin(), *lend = m_bits.end(); lp < lend; lp++, rp++)
         _count += std::popcount(*lp & *rp);
 
       return _count;
@@ -201,45 +217,45 @@ public:
         return;
       }
 
-      size_type  start_blk_pos{block_index(num_of_bits - n)};
-      size_type  start_bit_pos{bit_index(num_of_bits - n)};
+      size_type start_blk_pos{block_index(num_of_bits - n)};
+      size_type start_bit_pos{bit_index(num_of_bits - n)};
 
-      size_type  opos{0};
-      size_type  iblk_pos{start_blk_pos};
-      size_type  ibit_pos{start_bit_pos};
-      size_type  last_bits = num_of_bits % bits_per_block;
+      size_type opos{0};
+      size_type iblk_pos{start_blk_pos};
+      size_type ibit_pos{start_bit_pos};
+      size_type last_bits = num_of_bits % bits_per_block;
 
       while (opos < num_blocks())
       {
         block_type block{other.m_bits[iblk_pos]};
 
         // make block for output
-        block = (ibit_pos >= bits_per_block) ?  0 :  block >> ibit_pos;
+        block = (ibit_pos >= bits_per_block) ? 0 : block >> ibit_pos;
 
-        if ( (start_bit_pos == ibit_pos) && (iblk_pos == num_blocks()-1) )
+        if ((start_bit_pos == ibit_pos) && (iblk_pos == num_blocks() - 1))
           ibit_pos = last_bits == 0 ? ibit_pos : (bits_per_block - (last_bits - ibit_pos));
 
         iblk_pos++;
         if (iblk_pos == num_blocks())
           iblk_pos = 0;
 
-        if ( (iblk_pos == num_blocks()-1) && (iblk_pos != start_blk_pos) )
+        if ((iblk_pos == num_blocks() - 1) && (iblk_pos != start_blk_pos))
         {
           block_type rblock{other.m_bits[iblk_pos]};
 
-          rblock = (ibit_pos == 0) ? static_cast<block_type>(0) : rblock << (bits_per_block-ibit_pos);
+          rblock = (ibit_pos == 0) ? static_cast<block_type>(0) : rblock << (bits_per_block - ibit_pos);
           block |= rblock;
 
-          if ( (last_bits == 0) || (last_bits >= ibit_pos) )
+          if ((last_bits == 0) || (last_bits >= ibit_pos))
           {
             m_bits[opos] = block;
             opos++;
 
             rblock = other.m_bits[iblk_pos];
-            block = (rblock >> ibit_pos) & ~(~static_cast<block_type>(0) << (last_bits-ibit_pos));
-            ibit_pos = (last_bits == 0) ? ibit_pos : (bits_per_block-(last_bits - ibit_pos));
+            block = (rblock >> ibit_pos) & ~(~static_cast<block_type>(0) << (last_bits - ibit_pos));
+            ibit_pos = (last_bits == 0) ? ibit_pos : (bits_per_block - (last_bits - ibit_pos));
 
-            if ( (ibit_pos==0) && (last_bits == 0) )
+            if ((ibit_pos == 0) && (last_bits == 0))
               continue;
           }
           else
@@ -254,7 +270,7 @@ public:
         {
           block_type rblock{other.m_bits[iblk_pos]};
 
-          rblock = (ibit_pos == 0) ? 0 : rblock << (bits_per_block-ibit_pos);
+          rblock = (ibit_pos == 0) ? 0 : rblock << (bits_per_block - ibit_pos);
 
           if (ibit_pos >= start_bit_pos)
           {
@@ -276,7 +292,7 @@ public:
             m_bits[opos] = block;
             opos++;
 
-            assert(opos == num_blocks()-1);
+            assert(opos == num_blocks() - 1);
 
             block = other.m_bits[start_blk_pos];
 
@@ -288,7 +304,7 @@ public:
         {
           block_type rblock{other.m_bits[iblk_pos]};
 
-          rblock = (ibit_pos == 0) ? 0 : rblock << (bits_per_block-ibit_pos);
+          rblock = (ibit_pos == 0) ? 0 : rblock << (bits_per_block - ibit_pos);
           block |= rblock;
         }
 
@@ -311,8 +327,8 @@ public:
       }
 
       reset();
-      for (uint32_t i=0; i < size(); i++)
-        if (other.at((i+size()-n) % size()))
+      for (uint32_t i = 0; i < size(); i++)
+        if (other.at((i + size() - n) % size()))
           set(i);
     }
 
@@ -321,30 +337,30 @@ public:
     void createLeftNeighbourMask(StaticBitArray const other, int dt)
     {
 #ifdef __cpp_lib_ranges
-      std::ranges::copy(other.begin(),other.end(),begin());
+      std::ranges::copy(other.begin(), other.end(), begin());
 #else
       std::copy(other.begin(),other.end(),begin());
 #endif /* __cpp_lib_ranges */
-      if ( (dt > 0) && (dt < int(bits_per_block)) )
+      if ((dt > 0) && (dt < int(bits_per_block)))
       {
-        buffer_type  lbits;
+        buffer_type lbits;
 
 #ifdef __cpp_lib_ranges
-        std::ranges::copy(other.begin(),other.end(),std::begin(lbits));
+        std::ranges::copy(other.begin(), other.end(), std::begin(lbits));
 #else
         std::copy(other.begin(),other.end(),std::begin(lbits));
 #endif /* __cpp_lib_ranges */
 
         for (int ir = 0; ir < dt; ir++)
         {
-          size_type   const last = num_blocks() - 1;     // num_blocks() is >= 1
-          block_type *const b    = &lbits[0];
-          auto              prev = static_cast<block_type>(0);
-          block_type        newv;
+          size_type const last = num_blocks() - 1;     // num_blocks() is >= 1
+          block_type *const b = &lbits[0];
+          auto prev = static_cast<block_type>(0);
+          block_type newv;
 
           for (int i = last; i >= 0; --i)
           {
-            newv = (b[i] << 1) | (prev >> (bits_per_block-1));
+            newv = (b[i] << 1) | (prev >> (bits_per_block - 1));
             prev = b[i];
             b[i] = newv;
           }
@@ -364,32 +380,32 @@ public:
     void createRightNeighbourMask(StaticBitArray const other, int dt)
     {
 #ifdef __cpp_lib_ranges
-      std::ranges::copy(other.begin(),other.end(),begin());
+      std::ranges::copy(other.begin(), other.end(), begin());
 #else
       std::copy(other.begin(),other.end(),begin());
 #endif /* __cpp_lib_ranges */
 
       // distance must be less than the half of the size
-      if ( (dt > 0) && (dt < int(bits_per_block)) )
+      if ((dt > 0) && (dt < int(bits_per_block)))
       {
         buffer_type rbits;
 
 #ifdef __cpp_lib_ranges
-        std::ranges::copy(other.begin(),other.end(),std::begin(rbits));
+        std::ranges::copy(other.begin(), other.end(), std::begin(rbits));
 #else
         std::copy(other.begin(),other.end(),std::begin(rbits));
 #endif /* __cpp_lib_ranges */
 
         for (int ir = 0; ir < dt; ir++)
         {
-          size_type   const last = num_blocks() - 1;     // num_blocks() is >= 1
-          block_type *const b    = &rbits[0];
-          auto              prev = static_cast<block_type>(0);
-          block_type        newv;
+          size_type const last = num_blocks() - 1;     // num_blocks() is >= 1
+          block_type *const b = &rbits[0];
+          auto prev = static_cast<block_type>(0);
+          block_type newv;
 
           for (size_type i = 0; i <= last; ++i)
           {
-            newv = (b[i] >> 1) | (prev << (bits_per_block-1));
+            newv = (b[i] >> 1) | (prev << (bits_per_block - 1));
             prev = b[i];
             b[i] = newv;
           }
@@ -406,7 +422,7 @@ public:
 
     bool operator==(StaticBitArray const &other) const noexcept
     {
-      for (uint32_t i=0; i < num_blocks(); i++)
+      for (uint32_t i = 0; i < num_blocks(); i++)
         if (m_bits[i] != other.m_bits[i])
           return false;
 
@@ -432,6 +448,8 @@ public:
     {
       return std::end(m_bits);
     }
-};
+  };
+
+} // namespace nlg
 
 #endif //BITARRAYFASTROTATE_STATICBITARRAY_HPP

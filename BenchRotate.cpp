@@ -13,9 +13,9 @@ std::mt19937       gen(rd());  // Standard mersenne_twister_engine seeded with r
 std::uniform_int_distribution distribution(1000,1500);
 
 template <typename T>
-BitArray<T> make_bitarray(int num_bits)
+nlg::BitArray<T> make_bitarray(int num_bits)
 {
-  BitArray<block_type>          bitarr(num_bits);
+  nlg::BitArray<block_type>     bitarr(num_bits);
   std::uniform_int_distribution bitdistribution(0,num_bits-1);
   int                           num_ones = distribution(gen);
 
@@ -31,7 +31,7 @@ BitArray<T> make_bitarray(int num_bits)
 
 int   num_bits{distribution(gen)};
 
-BitArray<block_type>   bitarr{make_bitarray<block_type>(num_bits)};
+nlg::BitArray<block_type>   bitarr{make_bitarray<block_type>(num_bits)};
 
 
 // Benchmark the rotate
@@ -41,7 +41,7 @@ static void BM_Rotate(benchmark::State& state)
   {
     for (int j = 1; j < num_bits; j++)
     {
-      BitArray<block_type> bitarr_r(num_bits);
+      nlg::BitArray<block_type> bitarr_r(num_bits);
       bitarr_r.rotate(bitarr, j);
     }
   }
@@ -56,7 +56,7 @@ static void BM_RotateRight(benchmark::State& state)
   {
     for (int j=1; j < num_bits; j++)
     {
-      BitArray<block_type> bitarr_r(num_bits);
+      nlg::BitArray<block_type> bitarr_r(num_bits);
 
       bitarr_r.rotateRight(bitarr,j);
     }
@@ -70,11 +70,11 @@ BENCHMARK(BM_RotateRight);
 constinit const int NUM_BITS = 1230;
 
 template <typename T>
-StaticBitArray<NUM_BITS,T> make_bitarray()
+nlg::StaticBitArray<NUM_BITS,T> make_bitarray()
 {
-  StaticBitArray<NUM_BITS,block_type>   statbitarr;
-  std::uniform_int_distribution         bitdistribution(0,NUM_BITS-1);
-  int                                   num_ones = distribution(gen);
+  nlg::StaticBitArray<NUM_BITS,block_type>  statbitarr;
+  std::uniform_int_distribution             bitdistribution(0,NUM_BITS-1);
+  int                                       num_ones = distribution(gen);
 
   for (int j=0; j < num_ones; j++)
   {
@@ -86,8 +86,8 @@ StaticBitArray<NUM_BITS,T> make_bitarray()
   return statbitarr;
 }
 
-StaticBitArray<NUM_BITS,block_type>   static_bitarr{make_bitarray<block_type>()};
-BitArray<block_type>   bitarr4static{NUM_BITS, static_bitarr.begin(),static_bitarr.end()};
+nlg::StaticBitArray<NUM_BITS,block_type>   static_bitarr{make_bitarray<block_type>()};
+nlg::BitArray<block_type>   bitarr4static{NUM_BITS, static_bitarr.begin(),static_bitarr.end()};
 
 static void BM_Rotate4Static(benchmark::State& state)
 {
@@ -95,7 +95,7 @@ static void BM_Rotate4Static(benchmark::State& state)
   {
     for (int j = 1; j < NUM_BITS; j++)
     {
-      BitArray<block_type> bitarr_r(NUM_BITS);
+      nlg::BitArray<block_type> bitarr_r(NUM_BITS);
       bitarr_r.rotate(bitarr4static, j);
     }
   }
@@ -109,7 +109,7 @@ static void BM_StaticRotate(benchmark::State& state)
   {
     for (int j = 1; j < num_bits; j++)
     {
-      StaticBitArray<NUM_BITS,block_type> bitarr_r;
+      nlg::StaticBitArray<NUM_BITS,block_type> bitarr_r;
       bitarr_r.rotate(static_bitarr, j);
     }
   }
@@ -124,7 +124,7 @@ static void BM_StaticRotateRight(benchmark::State& state)
   {
     for (int j=1; j < num_bits; j++)
     {
-      BitArray<block_type> bitarr_r(num_bits);
+      nlg::BitArray<block_type> bitarr_r(num_bits);
 
       bitarr_r.rotateRight(bitarr,j);
     }
